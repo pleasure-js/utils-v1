@@ -4,7 +4,7 @@
  * Released under the MIT License.
  */
 import path from 'path';
-import fs$1, { existsSync } from 'fs';
+import fs, { existsSync } from 'fs';
 import util from 'util';
 import castArray from 'lodash/castArray';
 import each from 'lodash/each';
@@ -73,14 +73,14 @@ function findConfig () {
 function packageJson () {
   const file = findRoot('./package.json');
 
-  if (!fs$1.existsSync(file)) {
+  if (!fs.existsSync(file)) {
     return {}
   }
 
   return require(file)
 }
 
-const readdirAsync = util.promisify(fs$1.readdir);
+const readdirAsync = util.promisify(fs.readdir);
 
 const lstat = Promise.promisify(fs.lstat);
 
