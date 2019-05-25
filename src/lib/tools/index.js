@@ -7,7 +7,7 @@ import { deepScanDir } from './deep-scan-dir.js'
 
 export {
   MDRawParser,
-  deepScanDir
+  deepScanDir,
   mdShowSource,
   mdImport,
   packageJson,

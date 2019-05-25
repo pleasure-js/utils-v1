@@ -3,9 +3,10 @@
  * (c) 2018-2019 undefined
  * Released under the MIT License.
  */
-import path from 'path';
+import path$1 from 'path';
 import fs, { existsSync } from 'fs';
 import util from 'util';
+import each from 'lodash/each';
 import { EventEmitter } from 'events';
 import merge from 'deepmerge';
 import get from 'lodash/get';
@@ -23,15 +24,15 @@ function randomUniqueId () {
 }
 
 function findPackageJson (dir) {
-  dir = dir || path.resolve(process.cwd(), process.env.PLEASURE_ROOT || './');
-  const local = path.join(dir, 'package.json');
+  dir = dir || path$1.resolve(process.cwd(), process.env.PLEASURE_ROOT || './');
+  const local = path$1.join(dir, 'package.json');
   if (!existsSync(local)) {
     // todo: fix for different platforms
     if (local === '/') {
       return
     }
 
-    return findPackageJson(path.join(dir, '../'))
+    return findPackageJson(path$1.join(dir, '../'))
   }
 
   return local
@@ -56,7 +57,7 @@ function findPackageJson (dir) {
  * ```
  */
 function findRoot (...paths) {
-  return path.resolve(process.env.PLEASURE_ROOT || path.dirname(findPackageJson()), ...paths)
+  return path$1.resolve(process.env.PLEASURE_ROOT || path$1.dirname(findPackageJson()), ...paths)
 }
 
 /**
@@ -78,6 +79,49 @@ function packageJson () {
 }
 
 const readdirAsync = util.promisify(fs.readdir);
+
+async function deepScanDir (directory, { exclude = [/node_modules/], filter } = {}) {
+  const files = await readdirAsync(directory);
+  // console.log({ files })
+  let found = [];
+
+  await Promise.each(files, async file => {
+    file = path.join(directory, file);
+
+    const isDirectory = (await lstat(file)).isDirectory();
+
+    if (!isDirectory && filter && !await filter(file)) {
+      return
+    }
+
+    let excluded = false;
+
+    each(castArray(exclude), pattern => {
+      if (typeof pattern === 'string' && file.indexOf(pattern) >= 0) {
+        excluded = true;
+        return false
+      }
+
+      if (pattern instanceof RegExp && pattern.test(file)) {
+        excluded = true;
+        return false
+      }
+    });
+
+    if (excluded) {
+      return
+    }
+
+    if (isDirectory) {
+      found = found.concat(await deepScanDir(file, { exclude, filter }));
+      return
+    }
+
+    found.push(file);
+  });
+
+  return found
+}
 
 let singleton;
 
@@ -199,4 +243,4 @@ function getConfig (scope = null, mergeWith = {}, force = false, runMiddleware =
   )
 }
 
-export { eventsBus as EventBus, extendConfig, findConfig, findPackageJson, findRoot, getConfig, packageJson, randomUniqueId, readdirAsync };
+export { eventsBus as EventBus, deepScanDir, extendConfig, findConfig, findPackageJson, findRoot, getConfig, packageJson, randomUniqueId, readdirAsync };
