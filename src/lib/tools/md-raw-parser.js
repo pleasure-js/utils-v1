@@ -1,10 +1,9 @@
-import { readdirAsync } from 'src/lib/readdir-async.js'
 import fs from 'fs'
 import Promise from 'bluebird'
 import path from 'path'
 import castArray from 'lodash/castArray'
-import each from 'lodash/each'
 import mkdirp from 'mkdirp'
+import { deepScanDir } from './deep-scan-dir.js'
 
 const lstat = Promise.promisify(fs.lstat)
 const readFile = Promise.promisify(fs.readFile)
@@ -22,49 +21,6 @@ export const config = {
   pattern: /\.md$/
 }
 
-export async function deepScan (directory, { exclude = [/node_modules/], filter } = {}) {
-  const files = await readdirAsync(directory)
-  // console.log({ files })
-  let found = []
-
-  await Promise.each(files, async file => {
-    file = path.join(directory, file)
-
-    const isDirectory = (await lstat(file)).isDirectory()
-
-    if (!isDirectory && filter && !await filter(file)) {
-      return
-    }
-
-    let excluded = false
-
-    each(castArray(exclude), pattern => {
-      if (typeof pattern === 'string' && file.indexOf(pattern) >= 0) {
-        excluded = true
-        return false
-      }
-
-      if (pattern instanceof RegExp && pattern.test(file)) {
-        excluded = true
-        return false
-      }
-    })
-
-    if (excluded) {
-      return
-    }
-
-    if (isDirectory) {
-      found = found.concat(await deepScan(file, { exclude, filter }))
-      return
-    }
-
-    found.push(file)
-  })
-
-  return found
-}
-
 /**
  * Scans all files matching the `config.pattern` in given `directory`. Parses all matching files using a `plugins`
  * pipeline and writes the results in given `out` directory.
@@ -78,7 +34,7 @@ export async function deepScan (directory, { exclude = [/node_modules/], filter 
  */
 export async function MDRawParser (directory, { plugins = [], out, exclude = [/node_module/] } = {}) {
   // `rawFiles` = scans all files in given `directory` matching `config.pattern`
-  const rawFiles = await deepScan(directory, {
+  const rawFiles = await deepScanDir(directory, {
     exclude,
     filter (file) {
       return config.pattern.test(file)
