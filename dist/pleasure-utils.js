@@ -9,9 +9,9 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var path$1 = _interopDefault(require('path'));
-var fs = require('fs');
-var fs__default = _interopDefault(fs);
+var path = _interopDefault(require('path'));
+var fs$1 = require('fs');
+var fs$1__default = _interopDefault(fs$1);
 var util = _interopDefault(require('util'));
 var castArray = _interopDefault(require('lodash/castArray'));
 var each = _interopDefault(require('lodash/each'));
@@ -33,15 +33,15 @@ function randomUniqueId () {
 }
 
 function findPackageJson (dir) {
-  dir = dir || path$1.resolve(process.cwd(), process.env.PLEASURE_ROOT || './');
-  const local = path$1.join(dir, 'package.json');
-  if (!fs.existsSync(local)) {
+  dir = dir || path.resolve(process.cwd(), process.env.PLEASURE_ROOT || './');
+  const local = path.join(dir, 'package.json');
+  if (!fs$1.existsSync(local)) {
     // todo: fix for different platforms
     if (local === '/') {
       return
     }
 
-    return findPackageJson(path$1.join(dir, '../'))
+    return findPackageJson(path.join(dir, '../'))
   }
 
   return local
@@ -66,7 +66,7 @@ function findPackageJson (dir) {
  * ```
  */
 function findRoot (...paths) {
-  return path$1.resolve(process.env.PLEASURE_ROOT || path$1.dirname(findPackageJson()), ...paths)
+  return path.resolve(process.env.PLEASURE_ROOT || path.dirname(findPackageJson()), ...paths)
 }
 
 /**
@@ -80,14 +80,17 @@ function findConfig () {
 function packageJson () {
   const file = findRoot('./package.json');
 
-  if (!fs__default.existsSync(file)) {
+  if (!fs$1__default.existsSync(file)) {
     return {}
   }
 
   return require(file)
 }
 
-const readdirAsync = util.promisify(fs__default.readdir);
+const readdirAsync = util.promisify(fs$1__default.readdir);
+
+const lstat = Promise.promisify(fs.lstat);
+
 
 /**
  * Deep scans the given `directory` returning an array with strings to all of the files found in that `directory`.

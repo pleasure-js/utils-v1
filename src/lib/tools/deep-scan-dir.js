@@ -2,6 +2,10 @@ import { readdirAsync } from '../readdir-async.js'
 import castArray from 'lodash/castArray'
 import each from 'lodash/each'
 import Promise from 'bluebird'
+import path from 'path'
+
+const lstat = Promise.promisify(fs.lstat)
+
 
 /**
  * Deep scans the given `directory` returning an array with strings to all of the files found in that `directory`.

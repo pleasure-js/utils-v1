@@ -5,7 +5,6 @@ import castArray from 'lodash/castArray'
 import mkdirp from 'mkdirp'
 import { deepScanDir } from './deep-scan-dir.js'
 
-const lstat = Promise.promisify(fs.lstat)
 const readFile = Promise.promisify(fs.readFile)
 const writeFile = Promise.promisify(fs.writeFile)
 
