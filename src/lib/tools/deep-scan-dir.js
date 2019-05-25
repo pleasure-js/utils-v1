@@ -27,6 +27,7 @@ export async function deepScanDir (directory, { exclude = [/node_modules/], filt
     file = path.join(directory, file)
 
     let excluded = false
+    let included = only.length === 0
 
     each(castArray(exclude), pattern => {
       if (typeof pattern === 'string' && file.indexOf(pattern) >= 0) {
@@ -44,7 +45,16 @@ export async function deepScanDir (directory, { exclude = [/node_modules/], filt
       return
     }
 
-    let included = only.length === 0
+    const isDirectory = (await lstat(file)).isDirectory()
+
+    if (!isDirectory && filter && !await filter(file)) {
+      return
+    }
+
+    if (isDirectory) {
+      found = found.concat(await deepScanDir(file, { exclude, filter, only }))
+      return
+    }
 
     each(castArray(only), pattern => {
       if (typeof pattern === 'string' && file.indexOf(pattern) >= 0) {
@@ -59,17 +69,6 @@ export async function deepScanDir (directory, { exclude = [/node_modules/], filt
     })
 
     if (!included) {
-      return
-    }
-
-    const isDirectory = (await lstat(file)).isDirectory()
-
-    if (!isDirectory && filter && !await filter(file)) {
-      return
-    }
-
-    if (isDirectory) {
-      found = found.concat(await deepScanDir(file, { exclude, filter }))
       return
     }
 
