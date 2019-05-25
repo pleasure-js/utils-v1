@@ -6,7 +6,9 @@
 import path$1 from 'path';
 import fs, { existsSync } from 'fs';
 import util from 'util';
+import castArray from 'lodash/castArray';
 import each from 'lodash/each';
+import Promise from 'bluebird';
 import { EventEmitter } from 'events';
 import merge from 'deepmerge';
 import get from 'lodash/get';
@@ -80,6 +82,15 @@ function packageJson () {
 
 const readdirAsync = util.promisify(fs.readdir);
 
+/**
+ * Deep scans the given `directory` returning an array with strings to all of the files found in that `directory`.
+ *
+ * @param {String} directory - The directory to scan
+ * @param {String[]|RegExp[]} [exclude=[/node_modules/]] - Paths to exclude
+ * @param {Function} [filter] - Callback function called with the evaluated `path` as the first argument. Must return
+ * `true` or `false`
+ * @return {Promise<String[]>} Paths found
+ */
 async function deepScanDir (directory, { exclude = [/node_modules/], filter } = {}) {
   const files = await readdirAsync(directory);
   // console.log({ files })
