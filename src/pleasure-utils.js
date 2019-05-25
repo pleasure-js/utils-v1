@@ -5,7 +5,7 @@ import { packageJson } from './lib/package-json.js'
 import { findPackageJson } from './lib/find-package-json.js'
 import { readdirAsync } from './lib/readdir-async.js'
 import EventBus from './lib/events-bus.js'
-import { getConfig } from './lib/get-config.js'
+import { getConfig, extendConfig } from './lib/get-config.js'
 
 export {
   randomUniqueId,
@@ -15,5 +15,6 @@ export {
   findPackageJson,
   EventBus,
   readdirAsync,
-  getConfig
+  getConfig,
+  extendConfig
 }
