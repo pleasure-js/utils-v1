@@ -6,11 +6,14 @@
 import path from 'path';
 import fs, { existsSync } from 'fs';
 import util from 'util';
-import castArray from 'lodash/castArray';
-import each from 'lodash/each';
 import Promise from 'bluebird';
-import { EventEmitter } from 'events';
+import trim from 'lodash/trim';
+import castArray from 'lodash/castArray';
+import mkdirp from 'mkdirp';
+import each from 'lodash/each';
+import JSON5 from 'json5';
 import merge from 'deepmerge';
+import { EventEmitter } from 'events';
 import get from 'lodash/get';
 
 /**
@@ -30,8 +33,8 @@ function findPackageJson (dir) {
   const local = path.join(dir, 'package.json');
   if (!existsSync(local)) {
     // todo: fix for different platforms
-    if (local === '/') {
-      return
+    if (dir === '/') {
+      return path.join(process.cwd(), 'package.json')
     }
 
     return findPackageJson(path.join(dir, '../'))
@@ -81,6 +84,80 @@ function packageJson () {
 }
 
 const readdirAsync = util.promisify(fs.readdir);
+
+const config = {
+  pathPattern: [/(!\[[^\]]*])\(([^)]+)\)/mg],
+  libPath: '_lib',
+  fixPaths: true
+};
+
+/**
+ * Parses the given ugly assetPath (ugly meaning that could have or not hash's. i.e. 'path/to/asset.png#asdmpoiam')
+ *
+ * @ignore
+ * @param {String} assetPath - Path to the garbled asset.
+ * @return {Object} - Breaks downs the given garbled path and return the clean `path`, the `garbage` and the `sep`-arator
+ */
+function breakGarbledPath (assetPath) {
+  let [path, garbage = ''] = assetPath.split(/[#\s]/);
+  let sep = '';
+
+  if (garbage) {
+    sep = assetPath.match(/[#\s]/)[0];
+  }
+  return { path, garbage, sep }
+}
+
+function mdImport (cnf = config) {
+  const { fixPaths, pathPattern } = cnf;
+
+  return async function mdImport ({ opts, subModule, directory, parentDir, parser, src, content, display }) {
+    const libPath = path.join(directory, cnf.libPath);
+
+    const pattern = /@import\(([^\)]+)\)/g;
+    let loader = [];
+
+    content.replace(pattern, (m, args) => {
+      const file = args.indexOf(',') > 0 ? args.substr(0, args.indexOf(',')) : args;
+      // let options = args.indexOf(',') > 0 ? trim(args.substr(args.indexOf(',') + 1)) : '{}'
+
+      // options = deepmerge(defaultOptions, JSON5.parse(options))
+
+      let load = path.resolve(path.dirname(src), file);
+      // const format = path.parse(file).ext.substr(1)
+
+      if (!fs.existsSync(load)) {
+        load = path.resolve(libPath, file);
+      }
+
+      console.log({ load });
+      loader.push(parser(load, path.dirname(src)).then(content => {
+        return trim(content)
+      }));
+      return m
+    });
+
+    loader = await Promise.all(loader);
+
+    if (fixPaths) {
+      pathPattern.forEach(pattern => {
+        content = content.replace(pattern, (m, imgTag, assetPath) => {
+          const { path: thePath, sep, garbage } = breakGarbledPath(assetPath);
+          console.log({ thePath, sep, garbage, src, parentDir, assetPath });
+          let add = '';
+          if (garbage) {
+            add = `${ sep }${ garbage }`;
+          }
+          return `${ imgTag }(${ path.join(path.relative(parentDir, path.dirname(src)), thePath) }${ add })`
+        });
+      });
+    }
+
+    return content.replace(pattern, () => {
+      return loader.splice(0, 1)
+    })
+  }
+}
 
 const lstat = Promise.promisify(fs.lstat);
 
@@ -153,6 +230,138 @@ async function deepScanDir (directory, { exclude = [/node_modules/], filter, onl
   });
 
   return found
+}
+
+const readFile = Promise.promisify(fs.readFile);
+const writeFile = Promise.promisify(fs.writeFile);
+
+/*
+todo:
+  √ deeply scan given directory
+  √ grab *.raw.md files
+  √ parse their content applying plugins
+  √ write an output file removing the .raw. prefix
+ */
+
+const config$1 = {
+  pattern: /\.md$/
+};
+
+/**
+ * Scans all files matching the `config.pattern` in given `directory`. Parses all matching files using a `plugins`
+ * pipeline and writes the results in given `out` directory.
+ *
+ * @ignore
+ * @param {String} directory - The directory to scan
+ * @param plugins
+ * @param out
+ * @param {RegExp[]|String[]} exclude - `RegExp` or `String` path to exclude from importing.
+ * @return {Promise<*>}
+ */
+async function MDRawParser (directory, { plugins = [], out, exclude = [/node_module/] } = {}) {
+  // `rawFiles` = scans all files in given `directory` matching `config.pattern`
+  const rawFiles = await deepScanDir(directory, {
+    exclude,
+    filter (file) {
+      return config$1.pattern.test(file)
+    }
+  });
+
+  const mainOut = out;
+
+  /**
+   *
+   * @param {Object} opts -
+   * @param src
+   * @param parentDir
+   * @return {Promise<*>}
+   */
+  const parser = async (opts, src, parentDir) => {
+    let { directory, out } = opts || {};
+    console.log({ opts, src, parentDir });
+
+    if (!directory) {
+      directory = path.dirname(src);
+    }
+
+    const fileContent = await Promise.reduce(castArray(plugins), (content, plugin) => {
+      /**
+       * @typedef {Function} MDRawParserPlugin
+       * @desc Transforms given `content`
+       *
+       * @param {Object} opts - Plugin options
+       * @param {Boolean} opts.subModule - Whether the plugin is being called through the main pipeline or being
+       * re-called by another plugin
+       * @param {String} mainOut - Bundle destination
+       * @param {String} directory -
+       * @param {String} parentDir - `directory` to the file importing `src`
+       * @param {String} src - Path to the file where the `content` was loaded
+       * @param {String} content - The content of `src`
+       *
+       * @return {String} - New transformed source
+       */
+
+      return plugin({
+        opts,
+        mainOut,
+        directory,
+        parentDir: parentDir || directory,
+        src,
+        content,
+        parser: parser.bind(null, { subModule: true }),
+        Parser: parser
+      })
+    }, (await readFile(src)).toString());
+
+    const file = path.join(out || directory, path.relative(directory, src.replace(config$1.pattern, '.md')));
+
+    if (out) {
+      const dir = path.dirname(file);
+      // console.log({ file, fileContent, dir })
+      mkdirp.sync(dir);
+      return writeFile(file, fileContent)
+    }
+
+    return fileContent
+  };
+
+  await Promise.each(rawFiles, (file) => parser({ directory, out }, file));
+  return rawFiles
+}
+
+const readFile$1 = util.promisify(fs.readFile);
+
+let codeTag = '```';
+
+const defaultOptions = {
+  displayLink: true
+};
+
+async function mdShowSource ({ src, content, display }) {
+  const pattern = /@show-source\(([^\)]+)\)/g;
+  let loader = [];
+
+  content.replace(pattern, (m, args) => {
+    const file = args.indexOf(',') > 0 ? args.substr(0, args.indexOf(',')) : args;
+    let options = args.indexOf(',') > 0 ? trim(args.substr(args.indexOf(',') + 1)) : '{}';
+
+    options = merge(defaultOptions, JSON5.parse(options));
+
+    const load = path.resolve(path.dirname(src), file);
+    const format = path.parse(file).ext.substr(1);
+
+    loader.push(readFile$1(load).then(content => {
+      const output = [`${ codeTag }${ format }`, options.displayLink ? `// ${ file }\n` : false, trim(content.toString()), codeTag];
+      return output.filter(Boolean).join(`\n`)
+    }));
+    return m
+  });
+
+  loader = await Promise.all(loader);
+
+  return content.replace(pattern, (m) => {
+    return loader.splice(0, 1)
+  })
 }
 
 let singleton;
@@ -275,4 +484,4 @@ function getConfig (scope = null, mergeWith = {}, force = false, runMiddleware =
   )
 }
 
-export { eventsBus as EventBus, deepScanDir, extendConfig, findConfig, findPackageJson, findRoot, getConfig, packageJson, randomUniqueId, readdirAsync };
+export { eventsBus as EventBus, MDRawParser, deepScanDir, extendConfig, findConfig, findPackageJson, findRoot, getConfig, mdImport, mdShowSource, packageJson, randomUniqueId, readdirAsync };

@@ -6,8 +6,8 @@ export function findPackageJson (dir) {
   const local = path.join(dir, 'package.json')
   if (!existsSync(local)) {
     // todo: fix for different platforms
-    if (local === '/') {
-      return
+    if (dir === '/') {
+      return path.join(process.cwd(), 'package.json')
     }
 
     return findPackageJson(path.join(dir, '../'))
