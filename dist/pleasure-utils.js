@@ -22,6 +22,8 @@ var JSON5 = _interopDefault(require('json5'));
 var merge = _interopDefault(require('deepmerge'));
 var events = require('events');
 var get = _interopDefault(require('lodash/get'));
+var set = _interopDefault(require('lodash/set'));
+var dot = _interopDefault(require('dot-object'));
 
 /**
  * Returns a random unique id.
@@ -409,7 +411,7 @@ const middlewares = {};
  * // forces to assign 4000 as the value of port in the api scopes
  * extendConfig('api', { port: 4000 })
  *
- * // will return { api: { xxx: 'xvalue', port: 4000, yyy: 'yvalue' }, ui { ... } }
+ * // will return { api: { port: 4000, xxx: 'xValue', yyy: 'yValue' }, ui { ... } }
  * getConfig()
  * ```
  */
@@ -440,7 +442,7 @@ function getMiddlewareMutation (scope) {
     middlewareMutation = merge(middlewareMutation, mutation);
   });
 
-  console.log({ middlewareMutation });
+  // console.log({ middlewareMutation })
 
   return middlewareMutation
 }
@@ -475,6 +477,10 @@ function getMiddlewareMutation (scope) {
 function getConfig (scope = null, mergeWith = {}, force = false, runMiddleware = true) {
   const configFile = findConfig();
 
+  if (!fs__default.existsSync(configFile)) {
+    throw (`Config file '${ path.relative(process.cwd(), configFile) }' not found.`)
+  }
+
   if (force) {
     delete require.cache[require.resolve(configFile)];
   }
@@ -482,13 +488,27 @@ function getConfig (scope = null, mergeWith = {}, force = false, runMiddleware =
   const loadedConfig = require(configFile);
 
   // node.js only
-  return merge.all(
+  const mergedConfig = merge.all(
     [
-      {}, scope ? get(loadedConfig, scope, {}) : loadedConfig,
+      {},
+      scope ? get(loadedConfig, scope, {}) : loadedConfig,
       runMiddleware ? getMiddlewareMutation(scope) : {},
       mergeWith || {}
     ]
-  )
+  );
+
+  // merge with ENV
+  Object.keys(dot.dot(mergedConfig)).forEach(k => {
+    const envKey = `PLEASURE_${ scope }_${ k.replace(/\./g, '_') }`.toUpperCase();
+    // console.log(`looking for`, envKey)
+    if (process.env[envKey]) {
+      set(mergedConfig, k, process.env[envKey]);
+    }
+  });
+  console.log({ mergedConfig });
+  // console.log({ mergedConfig })
+
+  return mergedConfig
 }
 
 exports.EventBus = eventsBus;
