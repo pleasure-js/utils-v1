@@ -16,6 +16,7 @@ import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import get from 'lodash/get';
 import set from 'lodash/set';
+import snakeCase from 'lodash/snakeCase';
 import dot from 'dot-object';
 
 /**
@@ -393,12 +394,11 @@ const middlewares = {};
 
 /**
  * Extends a configuration scope
- *
  * @param {String} scope - Scope to extend
  * @param {Function|Object} replacement - Either an object to merge with the local configuration, or a function that
  * will get called per configuration request and must return an object to merge with local found scope.
  *
- * @example <saption>Overriding a scope</caption>
+ * @example <caption>Overriding a scope</caption>
  *
  * ```js
  * // forces to assign 4000 as the value of port in the api scopes
@@ -478,7 +478,7 @@ function getConfig (scope = null, mergeWith = {}, force = false, runMiddleware =
     delete require.cache[require.resolve(configFile)];
   }
 
-  const loadedConfig = require(configFile);
+  const loadedConfig = require(configFile) || {};
 
   // node.js only
   const mergedConfig = merge.all(
@@ -490,18 +490,45 @@ function getConfig (scope = null, mergeWith = {}, force = false, runMiddleware =
     ]
   );
 
-  // merge with ENV
-  Object.keys(dot.dot(mergedConfig)).forEach(k => {
-    const envKey = `PLEASURE_${ scope }_${ k.replace(/\./g, '_') }`.toUpperCase();
-    // console.log(`looking for`, envKey)
-    if (process.env[envKey]) {
-      set(mergedConfig, k, process.env[envKey]);
-    }
-  });
-  console.log({ mergedConfig });
-  // console.log({ mergedConfig })
-
-  return mergedConfig
+  return mergeConfigWithEnv(mergedConfig)
 }
 
-export { eventsBus as EventBus, MDRawParser, deepScanDir, extendConfig, findConfig, findPackageJson, findRoot, getConfig, mdImport, mdShowSource, packageJson, randomUniqueId, readdirAsync };
+/**
+ * Replaces `config` properties with given ENV variables. Mutates given `config`.
+ * @param {Object} config - The configuration object
+ * @param {String} prefix=PLEASURE - Prefix of the ENV variable
+ * @return {*} The mutated object
+ *
+ * @examples
+ *
+ * ```js
+ * process.env.PLEASURE_API_MONGODB_HOST = '127.0.0.1'
+ * mergeConfigWithEnv({
+ *   api: {
+ *     mongodb: {
+ *       host: 'localhost',
+ *       collection: 'my-project'
+ *     }
+ *   }
+ * })
+ *
+ * // api: {
+ * //   mongodb: {
+ * //     host: '127.0.0.1',
+ * //     collection: 'my-project'
+ * //   }
+ * // }
+ * ```
+ */
+function mergeConfigWithEnv (config, prefix = `PLEASURE`) {
+  // merge with ENV
+  Object.keys(dot.dot(config)).forEach(k => {
+    const envKey = `${ prefix }_${ snakeCase(k) }`.toUpperCase();
+    if (process.env[envKey]) {
+      set(config, k, process.env[envKey]);
+    }
+  });
+  return config
+}
+
+export { eventsBus as EventBus, MDRawParser, deepScanDir, extendConfig, findConfig, findPackageJson, findRoot, getConfig, mdImport, mdShowSource, mergeConfigWithEnv, packageJson, randomUniqueId, readdirAsync };

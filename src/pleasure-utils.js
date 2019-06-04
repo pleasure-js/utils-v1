@@ -6,7 +6,7 @@ import { findPackageJson } from './lib/find-package-json.js'
 import { readdirAsync } from './lib/readdir-async.js'
 import { deepScanDir, MDRawParser, mdImport, mdShowSource } from './lib/tools/index.js'
 import EventBus from './lib/events-bus.js'
-import { getConfig, extendConfig } from './lib/get-config.js'
+import { getConfig, extendConfig, mergeConfigWithEnv } from './lib/get-config.js'
 
 export {
   randomUniqueId,
@@ -21,5 +21,6 @@ export {
   deepScanDir,
   readdirAsync,
   getConfig,
-  extendConfig
+  extendConfig,
+  mergeConfigWithEnv
 }
