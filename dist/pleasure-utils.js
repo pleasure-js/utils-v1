@@ -477,15 +477,11 @@ function getMiddlewareMutation (scope) {
 function getConfig (scope = null, mergeWith = {}, force = false, runMiddleware = true) {
   const configFile = findConfig();
 
-  if (!fs__default.existsSync(configFile)) {
-    throw (`Config file '${ path.relative(process.cwd(), configFile) }' not found.`)
-  }
-
   if (force) {
     delete require.cache[require.resolve(configFile)];
   }
 
-  const loadedConfig = require(configFile) || {};
+  const loadedConfig = (fs__default.existsSync(configFile) ? require(configFile) : null) || {};
 
   // node.js only
   const mergedConfig = merge.all(
