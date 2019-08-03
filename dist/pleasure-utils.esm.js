@@ -18,6 +18,7 @@ import get from 'lodash/get';
 import set from 'lodash/set';
 import snakeCase from 'lodash/snakeCase';
 import dot from 'dot-object';
+import find from 'lodash/find';
 
 /**
  * Returns a random unique id.
@@ -69,11 +70,12 @@ function findRoot (...paths) {
 }
 
 /**
- * Locates the pleasure.config.js file
+ * Locates the pleasure.config.js file. Alternatively returns the env variable PLEASURE_CONFIG if set.
  * @ignore
  */
 function findConfig () {
-  return findRoot('pleasure.config.js')
+  // console.log({ res })
+  return process.env.PLEASURE_CONFIG || findRoot('pleasure.config.js')
 }
 
 function packageJson () {
@@ -392,6 +394,15 @@ function eventsBus () {
 
 const middlewares = {};
 
+const overwriteMerge = (destinationArray, sourceArray, options) => {
+  return sourceArray.concat(destinationArray.filter((ele, index) => {
+    if (typeof ele === 'object' && ele.hasOwnProperty('name')) {
+      return !find(sourceArray, { name: ele.name })
+    }
+    return sourceArray.indexOf(ele) === -1
+  }))
+};
+
 /**
  * Extends a configuration scope
  * @param {String} scope - Scope to extend
@@ -474,7 +485,7 @@ function getConfig (scope = null, mergeWith = {}, force = false, runMiddleware =
     delete require.cache[require.resolve(configFile)];
   }
 
-  const loadedConfig = (fs.existsSync(configFile) ? require(configFile) : null) || {};
+  const loadedConfig = fs.existsSync(configFile) ? require(configFile) : {};
 
   // node.js only
   const mergedConfig = merge.all(
@@ -483,7 +494,10 @@ function getConfig (scope = null, mergeWith = {}, force = false, runMiddleware =
       scope ? get(loadedConfig, scope, {}) : loadedConfig,
       runMiddleware ? getMiddlewareMutation(scope) : {},
       mergeWith || {}
-    ]
+    ],
+    {
+      arrayMerge: overwriteMerge
+    }
   );
 
   return mergeConfigWithEnv(mergedConfig)
@@ -517,7 +531,6 @@ function getConfig (scope = null, mergeWith = {}, force = false, runMiddleware =
  * ```
  */
 function mergeConfigWithEnv (config, prefix = `PLEASURE`) {
-  // merge with ENV
   Object.keys(dot.dot(config)).forEach(k => {
     const envKey = `${ prefix }_${ snakeCase(k) }`.toUpperCase();
     if (process.env[envKey]) {

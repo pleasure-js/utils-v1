@@ -100,7 +100,7 @@ export function getConfig (scope = null, mergeWith = {}, force = false, runMiddl
     delete require.cache[require.resolve(configFile)]
   }
 
-  const loadedConfig = (fs.existsSync(configFile) ? require(configFile) : null) || {}
+  const loadedConfig = fs.existsSync(configFile) ? require(configFile) : {}
 
   // node.js only
   const mergedConfig = merge.all(

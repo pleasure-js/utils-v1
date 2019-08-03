@@ -1,15 +1,18 @@
 {
   "name": "pleasure-utils",
+  "author": "Martin Rafael Gonzalez <tin@devtin.io>",
   "version": "1.0.0-beta",
   "description": "set of utils for pleasure",
   "main": "dist/pleasure-utils.js",
   "module": "dist/pleasure-utils.esm.js",
   "license": "MIT",
   "scripts": {
-    "build": "rollup -c rollup.config.js",
-    "build:live": "nodemon -w src --exec yarn build"
+    "build": "rollup -c",
+    "build:live": "nodemon -w src --exec yarn build",
+    "build:docs": "jsdoc2md --template README.hbs --files dist/pleasure-utils.js > README.md"
   },
   "devDependencies": {
+    "jsdoc-to-markdown": "^5.0.0",
     "nodemon": "^1.19.0",
     "rollup": "^1.12.3",
     "rollup-plugin-alias": "^1.5.1",
