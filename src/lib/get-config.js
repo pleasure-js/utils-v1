@@ -1,13 +1,22 @@
 import { findConfig } from './find-config.js'
 import merge from 'deepmerge'
 import fs from 'fs'
-import path from 'path'
 import get from 'lodash/get'
 import set from 'lodash/set'
 import snakeCase from 'lodash/snakeCase'
 import dot from 'dot-object'
+import find from 'lodash/find'
 
 const middlewares = {}
+
+const overwriteMerge = (destinationArray, sourceArray, options) => {
+  return sourceArray.concat(destinationArray.filter((ele, index) => {
+    if (typeof ele === 'object' && ele.hasOwnProperty('name')) {
+      return !find(sourceArray, { name: ele.name })
+    }
+    return sourceArray.indexOf(ele) === -1
+  }))
+}
 
 /**
  * Extends a configuration scope
@@ -100,7 +109,10 @@ export function getConfig (scope = null, mergeWith = {}, force = false, runMiddl
       scope ? get(loadedConfig, scope, {}) : loadedConfig,
       runMiddleware ? getMiddlewareMutation(scope) : {},
       mergeWith || {}
-    ]
+    ],
+    {
+      arrayMerge: overwriteMerge
+    }
   )
 
   return mergeConfigWithEnv(mergedConfig)
@@ -134,7 +146,6 @@ export function getConfig (scope = null, mergeWith = {}, force = false, runMiddl
  * ```
  */
 export function mergeConfigWithEnv (config, prefix = `PLEASURE`) {
-  // merge with ENV
   Object.keys(dot.dot(config)).forEach(k => {
     const envKey = `${ prefix }_${ snakeCase(k) }`.toUpperCase()
     if (process.env[envKey]) {
