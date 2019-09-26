@@ -1,0 +1,18 @@
+{
+  "name": "test-project",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Martin Gonzalez <tin@devtin.io>",
+  "license": "MIT",
+  "scripts": {
+    "start": "pls app start",
+    "stop": "pls app stop",
+    "dev": "pls app dev",
+    "build": "nuxt build",
+    "docs": "pls app build docs",
+    "guide": "pls app build guide"
+  },
+  "dependencies": {
+    "pleasure-cli": "keepwondering/pleasure-cli#v1-beta"
+  }
+}
