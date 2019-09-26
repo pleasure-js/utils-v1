@@ -9,11 +9,21 @@ import find from 'lodash/find'
 
 const middlewares = {}
 
-const overwriteMerge = (destinationArray, sourceArray, options) => {
-  return sourceArray.concat(destinationArray.filter((ele, index) => {
+export const overwriteMerge = (destinationArray, sourceArray, options) => {
+  // guessing when it's a moment pair array
+  // console.log({ destinationArray }, destinationArray.length === 2, typeof destinationArray[0] === 'number', typeof destinationArray[1] === 'string', { options })
+  if (destinationArray.length === 2 && typeof destinationArray[0] === 'number' && typeof destinationArray[1] === 'string') {
+    // replace the entire value... DO NOT MERGE
+    return sourceArray
+  }
+
+  return sourceArray.concat(destinationArray.filter((ele) => {
+    // merging strategy for plugins
     if (typeof ele === 'object' && ele.hasOwnProperty('name')) {
       return !find(sourceArray, { name: ele.name })
     }
+
+    // anything else
     return sourceArray.indexOf(ele) === -1
   }))
 }
@@ -39,6 +49,8 @@ export function extendConfig (scope = '', replacement) {
     return console.error(`provide both a scope & replacement`)
   }
 
+  // console.log(`adding middleware for ${ scope }`, replacement)
+
   if (!middlewares.hasOwnProperty(scope)) {
     middlewares[scope] = []
   }
@@ -55,10 +67,14 @@ function getMiddlewareMutation (scope) {
 
   middlewares[scope].forEach(mutation => {
     if (typeof mutation === 'function') {
-      middlewareMutation = merge(middlewareMutation, mutation())
+      middlewareMutation = merge(middlewareMutation, mutation(), {
+        arrayMerge: overwriteMerge
+      })
       return
     }
-    middlewareMutation = merge(middlewareMutation, mutation)
+    middlewareMutation = merge(middlewareMutation, mutation, {
+      arrayMerge: overwriteMerge
+    })
   })
 
   // console.log({ middlewareMutation })
@@ -94,22 +110,26 @@ function getMiddlewareMutation (scope) {
  * ```
  */
 export function getConfig (scope = null, mergeWith = {}, force = false, runMiddleware = true) {
+  // console.log(`pleasure-utils>get config`, { scope, force, runMiddleware })
   const configFile = findConfig()
 
   if (force) {
     delete require.cache[require.resolve(configFile)]
   }
 
-  const loadedConfig = fs.existsSync(configFile) ? require(configFile) : {}
+  const loadedConfig = (fs.existsSync(configFile) ? require(configFile) : null) || {}
+  const toMerge = [
+    {},
+    scope ? get(loadedConfig, scope, {}) : loadedConfig,
+    runMiddleware ? getMiddlewareMutation(scope) : {},
+    mergeWith || {}
+  ]
+
+  // console.log(`toMerge>>>`, toMerge)
 
   // node.js only
   const mergedConfig = merge.all(
-    [
-      {},
-      scope ? get(loadedConfig, scope, {}) : loadedConfig,
-      runMiddleware ? getMiddlewareMutation(scope) : {},
-      mergeWith || {}
-    ],
+    toMerge,
     {
       arrayMerge: overwriteMerge
     }
