@@ -60,7 +60,7 @@ export default function (cnf = config) {
         load = path.resolve(libPath, file)
       }
 
-      console.log({ load })
+      // console.log({ load })
       loader.push(parser(load, path.dirname(src)).then(content => {
         return trim(content)
       }))
@@ -73,7 +73,7 @@ export default function (cnf = config) {
       pathPattern.forEach(pattern => {
         content = content.replace(pattern, (m, imgTag, assetPath) => {
           const { path: thePath, sep, garbage } = breakGarbledPath(assetPath)
-          console.log({ thePath, sep, garbage, src, parentDir, assetPath })
+          // console.log({ thePath, sep, garbage, src, parentDir, assetPath })
           let add = ''
           if (garbage) {
             add = `${ sep }${ garbage }`

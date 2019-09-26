@@ -12,7 +12,7 @@ const lstat = Promise.promisify(fs.lstat)
  *
  * @param {String} directory - The directory to scan
  * @param {String[]|RegExp[]} [exclude=[/node_modules/]] - Paths to exclude
- * @param {String[]|RegExp[]} [only=[]] - If present, only paths matching the at least one of the expressions,
+ * @param {String[]|RegExp[]} [only=[]] - If present, only paths matching at least one of the expressions,
  * would be included.
  * @param {Function} [filter] - Callback function called with the evaluated `path` as the first argument. Must return
  * `true` or `false`

@@ -13,7 +13,7 @@ export default function copyAsset (cnf = config) {
     if (subModule) {
       return content
     }
-    console.log({ parentDir, mainOut, src, out })
+    // console.log({ parentDir, mainOut, src, out })
     // console.log(`copy assets in ${ src }`)
     // outPath is the absolute path to the dest folder in the config
     const outPath = path.join(mainOut, config.dest)
@@ -33,13 +33,13 @@ export default function copyAsset (cnf = config) {
         // console.log({ thePath, parentDir, out, mainOut, src, srcPath, destPath, outPath })
 
         if (!fs.existsSync(destPath) && fs.existsSync(srcPath)) {
-          console.log(`copying assets`)
+          // console.log(`copying assets`)
           mkdirp.sync(path.dirname(destPath))
           fs.copyFileSync(srcPath, destPath)
         }
 
         const relative = path.join(config.dest, cleanPath) + (garbage ? `${ sep }${ garbage }` : '')
-        console.log({ out, src, assetPath, relative, cleanPath, imgTag, 'config.dest': config.dest })
+        // console.log({ out, src, assetPath, relative, cleanPath, imgTag, 'config.dest': config.dest })
 
         // return relative path of the markdown file to the copied asset, plus any garbage it may had
         return `${ imgTag }(${ relative })`
