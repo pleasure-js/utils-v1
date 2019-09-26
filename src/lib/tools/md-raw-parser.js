@@ -51,7 +51,7 @@ export async function MDRawParser (directory, { plugins = [], out, exclude = [/n
    */
   const parser = async (opts, src, parentDir) => {
     let { directory, out } = opts || {}
-    console.log({ opts, src, parentDir })
+    // console.log({ opts, src, parentDir })
 
     if (!directory) {
       directory = path.dirname(src)
