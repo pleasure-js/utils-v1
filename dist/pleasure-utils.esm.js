@@ -1,6 +1,6 @@
 /*!
  * pleasure-utils v1.0.0-beta
- * (c) 2018-2019 undefined
+ * (c) 2018-2019 Martin Rafael Gonzalez <tin@devtin.io>
  * Released under the MIT License.
  */
 import path from 'path';
@@ -74,7 +74,6 @@ function findRoot (...paths) {
  * @ignore
  */
 function findConfig () {
-  // console.log({ res })
   return process.env.PLEASURE_CONFIG || findRoot('pleasure.config.js')
 }
 
@@ -135,7 +134,7 @@ function mdImport (cnf = config) {
         load = path.resolve(libPath, file);
       }
 
-      console.log({ load });
+      // console.log({ load })
       loader.push(parser(load, path.dirname(src)).then(content => {
         return trim(content)
       }));
@@ -148,7 +147,7 @@ function mdImport (cnf = config) {
       pathPattern.forEach(pattern => {
         content = content.replace(pattern, (m, imgTag, assetPath) => {
           const { path: thePath, sep, garbage } = breakGarbledPath(assetPath);
-          console.log({ thePath, sep, garbage, src, parentDir, assetPath });
+          // console.log({ thePath, sep, garbage, src, parentDir, assetPath })
           let add = '';
           if (garbage) {
             add = `${ sep }${ garbage }`;
@@ -171,7 +170,7 @@ const lstat = Promise.promisify(fs.lstat);
  *
  * @param {String} directory - The directory to scan
  * @param {String[]|RegExp[]} [exclude=[/node_modules/]] - Paths to exclude
- * @param {String[]|RegExp[]} [only=[]] - If present, only paths matching the at least one of the expressions,
+ * @param {String[]|RegExp[]} [only=[]] - If present, only paths matching at least one of the expressions,
  * would be included.
  * @param {Function} [filter] - Callback function called with the evaluated `path` as the first argument. Must return
  * `true` or `false`
@@ -283,7 +282,7 @@ async function MDRawParser (directory, { plugins = [], out, exclude = [/node_mod
    */
   const parser = async (opts, src, parentDir) => {
     let { directory, out } = opts || {};
-    console.log({ opts, src, parentDir });
+    // console.log({ opts, src, parentDir })
 
     if (!directory) {
       directory = path.dirname(src);
@@ -395,10 +394,20 @@ function eventsBus () {
 const middlewares = {};
 
 const overwriteMerge = (destinationArray, sourceArray, options) => {
-  return sourceArray.concat(destinationArray.filter((ele, index) => {
+  // guessing when it's a moment pair array
+  // console.log({ destinationArray }, destinationArray.length === 2, typeof destinationArray[0] === 'number', typeof destinationArray[1] === 'string', { options })
+  if (destinationArray.length === 2 && typeof destinationArray[0] === 'number' && typeof destinationArray[1] === 'string') {
+    // replace the entire value... DO NOT MERGE
+    return sourceArray
+  }
+
+  return sourceArray.concat(destinationArray.filter((ele) => {
+    // merging strategy for plugins
     if (typeof ele === 'object' && ele.hasOwnProperty('name')) {
       return !find(sourceArray, { name: ele.name })
     }
+
+    // anything else
     return sourceArray.indexOf(ele) === -1
   }))
 };
@@ -424,6 +433,8 @@ function extendConfig (scope = '', replacement) {
     return console.error(`provide both a scope & replacement`)
   }
 
+  // console.log(`adding middleware for ${ scope }`, replacement)
+
   if (!middlewares.hasOwnProperty(scope)) {
     middlewares[scope] = [];
   }
@@ -440,10 +451,14 @@ function getMiddlewareMutation (scope) {
 
   middlewares[scope].forEach(mutation => {
     if (typeof mutation === 'function') {
-      middlewareMutation = merge(middlewareMutation, mutation());
+      middlewareMutation = merge(middlewareMutation, mutation(), {
+        arrayMerge: overwriteMerge
+      });
       return
     }
-    middlewareMutation = merge(middlewareMutation, mutation);
+    middlewareMutation = merge(middlewareMutation, mutation, {
+      arrayMerge: overwriteMerge
+    });
   });
 
   // console.log({ middlewareMutation })
@@ -479,22 +494,26 @@ function getMiddlewareMutation (scope) {
  * ```
  */
 function getConfig (scope = null, mergeWith = {}, force = false, runMiddleware = true) {
+  // console.log(`pleasure-utils>get config`, { scope, force, runMiddleware })
   const configFile = findConfig();
 
   if (force) {
     delete require.cache[require.resolve(configFile)];
   }
 
-  const loadedConfig = fs.existsSync(configFile) ? require(configFile) : {};
+  const loadedConfig = (fs.existsSync(configFile) ? require(configFile) : null) || {};
+  const toMerge = [
+    {},
+    scope ? get(loadedConfig, scope, {}) : loadedConfig,
+    runMiddleware ? getMiddlewareMutation(scope) : {},
+    mergeWith || {}
+  ];
+
+  // console.log(`toMerge>>>`, toMerge)
 
   // node.js only
   const mergedConfig = merge.all(
-    [
-      {},
-      scope ? get(loadedConfig, scope, {}) : loadedConfig,
-      runMiddleware ? getMiddlewareMutation(scope) : {},
-      mergeWith || {}
-    ],
+    toMerge,
     {
       arrayMerge: overwriteMerge
     }
@@ -540,4 +559,4 @@ function mergeConfigWithEnv (config, prefix = `PLEASURE`) {
   return config
 }
 
-export { eventsBus as EventBus, MDRawParser, deepScanDir, extendConfig, findConfig, findPackageJson, findRoot, getConfig, mdImport, mdShowSource, mergeConfigWithEnv, packageJson, randomUniqueId, readdirAsync };
+export { eventsBus as EventBus, MDRawParser, deepScanDir, extendConfig, findConfig, findPackageJson, findRoot, getConfig, mdImport, mdShowSource, mergeConfigWithEnv, overwriteMerge, packageJson, randomUniqueId, readdirAsync };
