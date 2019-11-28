@@ -11,8 +11,17 @@ const fromSrc = (...paths) => {
 
 const plugins = [
   alias({
-    src: fromSrc(),
-    lib: fromSrc('lib')
+    entries: [
+      {
+        find: 'src',
+        replacement: fromSrc(),
+      },
+      {
+        find: 'lib',
+        replacement: fromSrc('lib')
+
+      }
+    ]
   }),
   json(),
   commonjs({
