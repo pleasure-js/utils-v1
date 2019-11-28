@@ -453,6 +453,9 @@ function getMiddlewareMutation (scope) {
   let middlewareMutation = {};
 
   if (!middlewares.hasOwnProperty(scope)) {
+    Object.keys(middlewares).forEach(scope => {
+      middlewareMutation[scope] = getMiddlewareMutation(scope);
+    });
     return middlewareMutation
   }
 
@@ -467,8 +470,6 @@ function getMiddlewareMutation (scope) {
       arrayMerge: overwriteMerge
     });
   });
-
-  // console.log({ middlewareMutation })
 
   return middlewareMutation
 }
@@ -510,7 +511,6 @@ function getConfig (scope = null, mergeWith = {}, force = false, runMiddleware =
 
   const loadedConfig = (fs__default.existsSync(configFile) ? require(configFile) : null) || {};
   const toMerge = [
-    {},
     scope ? get(loadedConfig, scope, {}) : loadedConfig,
     runMiddleware ? getMiddlewareMutation(scope) : {},
     mergeWith || {}
