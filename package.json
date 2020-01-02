@@ -9,7 +9,8 @@
   "scripts": {
     "build": "rollup -c",
     "build:live": "nodemon -w src --exec yarn build",
-    "build:docs": "jsdoc2md --template README.hbs --files dist/pleasure-utils.js > README.md"
+    "build:docs": "jsdoc2md --template README.hbs --files dist/pleasure-utils.js > README.md",
+    "test": "ava --serial --verbose"
   },
   "devDependencies": {
     "jsdoc-to-markdown": "^5.0.2",

@@ -13,6 +13,6 @@
     "guide": "pls app build guide"
   },
   "dependencies": {
-    "@pleasure-js/cli": "file:/Users/tin/projects/pleasure-suite-builder/packages/cli"
+    "@pleasure-js/cli": "git@github.com:pleasure-js/cli.git#v1-beta"
   }
 }
