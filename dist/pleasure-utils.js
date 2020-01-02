@@ -27,6 +27,38 @@ var snakeCase = _interopDefault(require('lodash/snakeCase'));
 var dot = _interopDefault(require('dot-object'));
 var find = _interopDefault(require('lodash/find'));
 
+function ArgsParser (args = process.argv) {
+  const res = {};
+  let currentArg;
+  args.forEach(arg => {
+    const cleanArg = camelCase(arg.replace(/^-+/, '').replace(/=.*$/, ''));
+
+    if (currentArg) {
+      if (/^-/.test(arg)) {
+        res[currentArg] = true;
+      } else {
+        res[currentArg] = cleanArg;
+        currentArg = null;
+        return
+      }
+    }
+
+    if (/^--/.test(arg)) {
+      if (arg.indexOf('=') > 0) {
+        res[cleanArg] = arg.split('=')[1];
+      } else {
+        currentArg = cleanArg;
+      }
+    } else if (/^-/.test(arg)) {
+      res[cleanArg] = true;
+    }
+  });
+  if (currentArg) {
+    res[currentArg] = true;
+  }
+  return res
+}
+
 /**
  * Returns a random unique id.
  *
@@ -377,7 +409,7 @@ async function mdShowSource ({ src, content, display }) {
 
 let singleton;
 
-function eventsBus () {
+function EventBus () {
   if (singleton) {
     return singleton
   }
@@ -566,7 +598,8 @@ function mergeConfigWithEnv (config, prefix = `PLEASURE`) {
   return config
 }
 
-exports.EventBus = eventsBus;
+exports.ArgsParser = ArgsParser;
+exports.EventBus = EventBus;
 exports.MDRawParser = MDRawParser;
 exports.deepScanDir = deepScanDir;
 exports.extendConfig = extendConfig;

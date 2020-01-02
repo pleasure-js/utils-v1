@@ -2,7 +2,7 @@ import { EventEmitter } from 'events'
 
 let singleton
 
-export default function () {
+export function EventBus () {
   if (singleton) {
     return singleton
   }
