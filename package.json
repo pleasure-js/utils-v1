@@ -1,5 +1,5 @@
 {
-  "name": "pleasure-utils",
+  "name": "@pleasure-js/utils",
   "author": "Martin Rafael Gonzalez <tin@devtin.io>",
   "version": "1.0.0-beta",
   "description": "set of utils for pleasure",

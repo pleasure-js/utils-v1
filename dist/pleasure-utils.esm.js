@@ -1,6 +1,6 @@
 /*!
- * pleasure-utils v1.0.0-beta
- * (c) 2018-2019 Martin Rafael Gonzalez <tin@devtin.io>
+ * @pleasure-js/utils v1.0.0-beta
+ * (c) 2018-2020 Martin Rafael Gonzalez <tin@devtin.io>
  * Released under the MIT License.
  */
 import path from 'path';
