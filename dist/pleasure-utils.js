@@ -598,6 +598,10 @@ function mergeConfigWithEnv (config, prefix = `PLEASURE`) {
   return config
 }
 
+function isEmail (email) {
+  return /^[a-z][a-z0-9.+_-]*@[a-z0-9.-]+\.[a-z]{2,16}$/i.test(email)
+}
+
 exports.ArgsParser = ArgsParser;
 exports.EventBus = EventBus;
 exports.MDRawParser = MDRawParser;
@@ -607,6 +611,7 @@ exports.findConfig = findConfig;
 exports.findPackageJson = findPackageJson;
 exports.findRoot = findRoot;
 exports.getConfig = getConfig;
+exports.isEmail = isEmail;
 exports.mdImport = mdImport;
 exports.mdShowSource = mdShowSource;
 exports.mergeConfigWithEnv = mergeConfigWithEnv;

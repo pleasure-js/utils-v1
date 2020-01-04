@@ -591,4 +591,8 @@ function mergeConfigWithEnv (config, prefix = `PLEASURE`) {
   return config
 }
 
-export { ArgsParser, EventBus, MDRawParser, deepScanDir, extendConfig, findConfig, findPackageJson, findRoot, getConfig, mdImport, mdShowSource, mergeConfigWithEnv, overwriteMerge, packageJson, randomUniqueId, readdirAsync };
+function isEmail (email) {
+  return /^[a-z][a-z0-9.+_-]*@[a-z0-9.-]+\.[a-z]{2,16}$/i.test(email)
+}
+
+export { ArgsParser, EventBus, MDRawParser, deepScanDir, extendConfig, findConfig, findPackageJson, findRoot, getConfig, isEmail, mdImport, mdShowSource, mergeConfigWithEnv, overwriteMerge, packageJson, randomUniqueId, readdirAsync };
