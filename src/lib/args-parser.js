@@ -1,3 +1,5 @@
+import camelCase from 'lodash/camelCase'
+
 export function ArgsParser (args = process.argv) {
   const res = {}
   let currentArg

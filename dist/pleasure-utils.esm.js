@@ -3,6 +3,7 @@
  * (c) 2018-2020 Martin Rafael Gonzalez <tin@devtin.io>
  * Released under the MIT License.
  */
+import camelCase from 'lodash/camelCase';
 import path from 'path';
 import fs, { existsSync } from 'fs';
 import util from 'util';

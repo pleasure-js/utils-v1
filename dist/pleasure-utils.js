@@ -9,6 +9,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
+var camelCase = _interopDefault(require('lodash/camelCase'));
 var path = _interopDefault(require('path'));
 var fs = require('fs');
 var fs__default = _interopDefault(fs);
